@@ -545,8 +545,8 @@
 
   function applyFiltersAndSort() {
     let list = radiusRawResults.filter(r => {
-      if (!filterEmenda.checked && r.city.emendas.length > 0) return false;
-      if (!filterIndicacao.checked && r.city.indicacoes.length > 0) return false;
+      if (filterEmenda.checked && r.city.emendas.length === 0) return false;
+      if (filterIndicacao.checked && r.city.indicacoes.length === 0) return false;
       return true;
     });
     const sortBy = radiusSortSelect.value;
