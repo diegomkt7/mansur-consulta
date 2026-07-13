@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mansur-consulta-v4';
+const CACHE_NAME = 'mansur-consulta-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -26,16 +26,15 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  // Network-first: always prefer the latest deployed version when online,
+  // and only fall back to the cache when offline.
   event.respondWith(
-    caches.match(event.request).then(cached => {
-      const network = fetch(event.request).then(res => {
-        if (res && res.status === 200) {
-          const clone = res.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return res;
-      }).catch(() => cached);
-      return cached || network;
-    })
+    fetch(event.request).then(res => {
+      if (res && res.status === 200) {
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+      }
+      return res;
+    }).catch(() => caches.match(event.request))
   );
 });

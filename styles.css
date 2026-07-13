@@ -63,9 +63,10 @@ html, body {
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 13.5px;
+  font-size: 14px;
   font-weight: 700;
-  padding: 10px 6px;
+  padding: 14px 6px;
+  min-height: 48px;
   border-radius: 9px;
   cursor: pointer;
 }
@@ -103,7 +104,9 @@ html, body {
   background: transparent;
   font-size: 20px;
   color: var(--text-secondary);
-  padding: 6px;
+  padding: 10px;
+  min-width: 40px;
+  min-height: 40px;
   cursor: pointer;
   line-height: 1;
 }
@@ -220,13 +223,14 @@ html, body {
 .badge-no { background: var(--gray-bg); color: var(--gray-text); border-color: var(--gray-border); }
 
 .ver-mais-btn {
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 700;
   color: #fff;
   background: var(--primary);
   border: none;
   border-radius: 20px;
-  padding: 7px 14px;
+  padding: 11px 18px;
+  min-height: 40px;
   cursor: pointer;
 }
 .ver-mais-btn:active { opacity: 0.85; }
@@ -311,10 +315,11 @@ html, body {
   border: 1px solid var(--border);
   background: var(--background);
   color: var(--text-primary);
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
-  padding: 7px 12px;
-  border-radius: 16px;
+  padding: 11px 16px;
+  min-height: 40px;
+  border-radius: 18px;
   cursor: pointer;
 }
 .chip:active { background: var(--primary); color: #fff; border-color: var(--primary); }
@@ -354,10 +359,11 @@ html, body {
   border: none;
   background: rgba(255,255,255,0.15);
   color: #fff;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 16px;
+  padding: 10px 16px;
+  min-height: 40px;
+  border-radius: 18px;
   cursor: pointer;
   margin-bottom: 10px;
 }
@@ -406,8 +412,8 @@ html, body {
 .sheet-header h2 { font-size: 17px; margin: 0; color: var(--accent); }
 .sheet-close {
   border: none; background: var(--background);
-  width: 30px; height: 30px; border-radius: 50%;
-  font-size: 18px; color: var(--text-secondary);
+  width: 40px; height: 40px; border-radius: 50%;
+  font-size: 20px; color: var(--text-secondary);
   cursor: pointer; line-height: 1;
 }
 .sheet-body { overflow-y: auto; padding: 12px 18px 24px; -webkit-overflow-scrolling: touch; }
