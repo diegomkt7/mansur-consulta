@@ -63,7 +63,33 @@
 
   <section id="panelRaio" class="tab-panel" hidden>
     <section class="radius-controls">
-      <p class="radius-intro">Digite um raio (até 150 km) para listar os municípios mais próximos da sua localização atual.</p>
+      <p class="radius-intro">Digite um raio (até 150 km) para listar os municípios mais próximos de um ponto de partida.</p>
+
+      <div class="field-label">Ponto de partida</div>
+      <div class="origin-toggle" id="originToggle">
+        <button class="origin-btn active" data-origin="gps" type="button">📍 Minha localização</button>
+        <button class="origin-btn" data-origin="city" type="button">🏙️ Escolher cidade</button>
+      </div>
+
+      <div id="originCityBox" class="origin-city-box" hidden>
+        <div class="search-box origin-search-box">
+          <span class="search-icon">&#128269;</span>
+          <input
+            id="originCityInput"
+            type="text"
+            inputmode="search"
+            autocomplete="off"
+            autocorrect="off"
+            autocapitalize="off"
+            spellcheck="false"
+            placeholder="Buscar cidade de partida..."
+            aria-label="Cidade de partida"
+          >
+        </div>
+        <ul id="originCitySuggestions" class="suggestions-list" role="listbox" hidden></ul>
+        <div id="originCitySelectedChip" class="origin-selected-chip" hidden></div>
+      </div>
+
       <div class="radius-input-row">
         <input id="radiusInput" type="number" inputmode="numeric" min="1" max="150" placeholder="Ex: 50" aria-label="Raio em quilômetros">
         <span class="radius-unit">km</span>
@@ -75,6 +101,19 @@
         <button class="chip" data-km="50" type="button">50 km</button>
         <button class="chip" data-km="100" type="button">100 km</button>
         <button class="chip" data-km="150" type="button">150 km</button>
+      </div>
+
+      <div class="field-label">Ordenar por</div>
+      <select id="radiusSortSelect" class="radius-sort-select" aria-label="Ordenar por">
+        <option value="dist">Distância (mais perto primeiro)</option>
+        <option value="votos">Quantidade de votos (maior primeiro)</option>
+        <option value="pct">% de votos válidos (maior primeiro)</option>
+      </select>
+
+      <div class="field-label">Filtros</div>
+      <div class="radius-filters-row">
+        <label class="filter-check"><input type="checkbox" id="filterEmenda" checked> Incluir cidades com emenda</label>
+        <label class="filter-check"><input type="checkbox" id="filterIndicacao" checked> Incluir cidades com indicação</label>
       </div>
     </section>
 

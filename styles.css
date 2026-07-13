@@ -284,6 +284,87 @@ html, body {
   margin-bottom: 10px;
 }
 .radius-intro { font-size: 13px; color: var(--text-secondary); margin: 0 0 12px; line-height: 1.45; }
+
+.field-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-secondary);
+  margin: 14px 0 8px;
+}
+.field-label:first-of-type { margin-top: 0; }
+
+.origin-toggle { display: flex; gap: 8px; }
+.origin-btn {
+  flex: 1;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 11px 10px;
+  min-height: 40px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.origin-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+.origin-city-box { margin-top: 10px; position: relative; }
+.origin-search-box { margin: 0; }
+.origin-selected-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--green-bg);
+  color: var(--green-text);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 13px;
+  margin-top: 8px;
+}
+.origin-selected-chip button {
+  border: none;
+  background: transparent;
+  color: var(--green-text);
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 8px;
+  line-height: 1;
+}
+
+.radius-sort-select {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text-primary);
+  border-radius: 10px;
+  padding: 11px 12px;
+  font-size: 14px;
+  min-height: 44px;
+}
+.radius-sort-select:focus { outline: none; border-color: var(--primary); }
+
+.radius-filters-row { display: flex; flex-direction: column; gap: 4px; }
+.filter-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: var(--text-primary);
+  padding: 9px 4px;
+  cursor: pointer;
+}
+.filter-check input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
 .radius-input-row { display: flex; align-items: center; gap: 8px; }
 #radiusInput {
   flex: 1;

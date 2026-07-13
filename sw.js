@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mansur-consulta-v5';
+const CACHE_NAME = 'mansur-consulta-v6';
 const ASSETS = [
   './',
   './index.html',

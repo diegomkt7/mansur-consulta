@@ -6,7 +6,12 @@
   let cityWatchId = null;
   let selectedCity = null;
   let activeTab = 'nome';
+  let radiusRawResults = [];
   let radiusResultsCache = [];
+  let lastRadiusKm = null;
+  let originMode = 'gps';
+  let originCity = null;
+  let originSuggestionsData = [];
 
   const tabsBar = document.getElementById('tabsBar');
   const panelNome = document.getElementById('panelNome');
@@ -26,6 +31,14 @@
   const radiusSearchBtn = document.getElementById('radiusSearchBtn');
   const radiusStatus = document.getElementById('radiusStatus');
   const radiusResultsList = document.getElementById('radiusResultsList');
+  const originToggle = document.getElementById('originToggle');
+  const originCityBox = document.getElementById('originCityBox');
+  const originCityInput = document.getElementById('originCityInput');
+  const originCitySuggestions = document.getElementById('originCitySuggestions');
+  const originCitySelectedChip = document.getElementById('originCitySelectedChip');
+  const radiusSortSelect = document.getElementById('radiusSortSelect');
+  const filterEmenda = document.getElementById('filterEmenda');
+  const filterIndicacao = document.getElementById('filterIndicacao');
 
   let activeIndex = -1;
   let currentSuggestions = [];
@@ -423,7 +436,86 @@
     radiusStatus.hidden = !msg;
   }
 
-  function runRadiusSearch(km) {
+  // --- Origin: GPS vs. reference city ---
+
+  function setOriginMode(mode) {
+    if (mode === originMode) return;
+    originMode = mode;
+    [...originToggle.children].forEach(btn => btn.classList.toggle('active', btn.dataset.origin === mode));
+    originCityBox.hidden = mode !== 'city';
+    radiusRawResults = [];
+    radiusResultsCache = [];
+    lastRadiusKm = null;
+    radiusResultsList.innerHTML = '';
+    radiusStatus.hidden = true;
+  }
+
+  function renderOriginCitySuggestions(query) {
+    if (!query.trim()) {
+      originCitySuggestions.hidden = true;
+      originSuggestionsData = [];
+      return;
+    }
+    const results = search(query);
+    originSuggestionsData = results;
+    if (results.length === 0) {
+      originCitySuggestions.innerHTML = `<li class="suggestion-empty">Nenhum município encontrado</li>`;
+      originCitySuggestions.hidden = false;
+      return;
+    }
+    originCitySuggestions.innerHTML = results.map((c, i) => `
+      <li class="suggestion-item" role="option" data-index="${i}">
+        <span class="suggestion-name">${highlightMatch(c.nome, query)}</span>
+      </li>
+    `).join('');
+    originCitySuggestions.hidden = false;
+  }
+
+  function selectOriginCity(city) {
+    originCity = city;
+    originCityInput.value = city.nome;
+    originCitySuggestions.hidden = true;
+    renderOriginSelectedChip();
+  }
+
+  function renderOriginSelectedChip() {
+    if (!originCity) {
+      originCitySelectedChip.hidden = true;
+      originCitySelectedChip.innerHTML = '';
+      return;
+    }
+    originCitySelectedChip.hidden = false;
+    originCitySelectedChip.innerHTML = `
+      <span>Partindo de <b>${escapeHtml(originCity.nome)}</b></span>
+      <button id="clearOriginCity" type="button" aria-label="Remover cidade de partida">&times;</button>
+    `;
+    document.getElementById('clearOriginCity').addEventListener('click', () => {
+      originCity = null;
+      originCityInput.value = '';
+      renderOriginSelectedChip();
+      radiusRawResults = [];
+      radiusResultsCache = [];
+      lastRadiusKm = null;
+      radiusResultsList.innerHTML = '';
+      radiusStatus.hidden = true;
+    });
+  }
+
+  // --- Radius search ---
+
+  function initiateRadiusSearch(km) {
+    if (originMode === 'city') {
+      if (!originCity) {
+        showRadiusStatus('Selecione uma cidade de partida para calcular distâncias.', 'error');
+        return;
+      }
+      computeRadiusResults(originCity.lat, originCity.lon, km, originCity);
+      return;
+    }
+    runRadiusSearchGps(km);
+  }
+
+  function runRadiusSearchGps(km) {
     if (!('geolocation' in navigator)) {
       showRadiusStatus('Este dispositivo/navegador não suporta geolocalização.', 'error');
       return;
@@ -434,22 +526,47 @@
     navigator.geolocation.getCurrentPosition(
       pos => {
         const { latitude, longitude } = pos.coords;
-        const results = CIDADES
-          .filter(c => c.lat != null && c.lon != null)
-          .map(c => ({ city: c, dist: haversineKm(latitude, longitude, c.lat, c.lon) }))
-          .filter(r => r.dist <= km)
-          .sort((a, b) => a.dist - b.dist);
-        radiusResultsCache = results;
-        renderRadiusResults(results, km);
+        computeRadiusResults(latitude, longitude, km, null);
       },
       err => showRadiusStatus(geoErrorMessage(err), 'error'),
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
     );
   }
 
+  function computeRadiusResults(lat, lon, km, excludeCity) {
+    radiusRawResults = CIDADES
+      .filter(c => c.lat != null && c.lon != null)
+      .filter(c => !excludeCity || c.ibge !== excludeCity.ibge)
+      .map(c => ({ city: c, dist: haversineKm(lat, lon, c.lat, c.lon) }))
+      .filter(r => r.dist <= km);
+    lastRadiusKm = km;
+    applyFiltersAndSort();
+  }
+
+  function applyFiltersAndSort() {
+    let list = radiusRawResults.filter(r => {
+      if (!filterEmenda.checked && r.city.emendas.length > 0) return false;
+      if (!filterIndicacao.checked && r.city.indicacoes.length > 0) return false;
+      return true;
+    });
+    const sortBy = radiusSortSelect.value;
+    if (sortBy === 'votos') {
+      list = [...list].sort((a, b) => b.city.votos - a.city.votos);
+    } else if (sortBy === 'pct') {
+      list = [...list].sort((a, b) => (b.city.pctVotos ?? 0) - (a.city.pctVotos ?? 0));
+    } else {
+      list = [...list].sort((a, b) => a.dist - b.dist);
+    }
+    radiusResultsCache = list;
+    renderRadiusResults(list, lastRadiusKm);
+  }
+
   function renderRadiusResults(results, km) {
     if (results.length === 0) {
-      showRadiusStatus(`Nenhum município encontrado em um raio de ${km} km.`, 'empty');
+      const msg = radiusRawResults.length > 0
+        ? 'Nenhum município corresponde aos filtros selecionados.'
+        : `Nenhum município encontrado em um raio de ${km} km.`;
+      showRadiusStatus(msg, 'empty');
       radiusResultsList.innerHTML = '';
       return;
     }
@@ -534,6 +651,9 @@
     if (!e.target.closest('.search-section')) {
       suggestionsList.hidden = true;
     }
+    if (!e.target.closest('#originCityBox')) {
+      originCitySuggestions.hidden = true;
+    }
   });
 
   sheetClose.addEventListener('click', closeDetailSheet);
@@ -546,6 +666,33 @@
     if (btn) switchTab(btn.dataset.tab);
   });
 
+  originToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('.origin-btn');
+    if (btn) setOriginMode(btn.dataset.origin);
+  });
+
+  originCityInput.addEventListener('input', () => renderOriginCitySuggestions(originCityInput.value));
+
+  originCitySuggestions.addEventListener('click', (e) => {
+    const li = e.target.closest('.suggestion-item');
+    if (!li) return;
+    const idx = Number(li.dataset.index);
+    const city = originSuggestionsData[idx];
+    if (city) selectOriginCity(city);
+  });
+
+  radiusSortSelect.addEventListener('change', () => {
+    if (lastRadiusKm != null) applyFiltersAndSort();
+  });
+
+  filterEmenda.addEventListener('change', () => {
+    if (lastRadiusKm != null) applyFiltersAndSort();
+  });
+
+  filterIndicacao.addEventListener('change', () => {
+    if (lastRadiusKm != null) applyFiltersAndSort();
+  });
+
   radiusSearchBtn.addEventListener('click', () => {
     const km = clampRadiusKm(radiusInput.value);
     if (km == null) {
@@ -553,7 +700,7 @@
       return;
     }
     radiusInput.value = km;
-    runRadiusSearch(km);
+    initiateRadiusSearch(km);
   });
 
   radiusInput.addEventListener('keydown', (e) => {
@@ -564,7 +711,7 @@
     const chip = e.target.closest('.chip');
     if (!chip) return;
     radiusInput.value = chip.dataset.km;
-    runRadiusSearch(Number(chip.dataset.km));
+    initiateRadiusSearch(Number(chip.dataset.km));
   });
 
   radiusResultsList.addEventListener('click', (e) => {
