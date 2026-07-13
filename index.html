@@ -25,33 +25,61 @@
 
 <main class="container">
 
-  <section class="search-section">
-    <div class="search-box" id="searchBox">
-      <span class="search-icon">&#128269;</span>
-      <input
-        id="searchInput"
-        type="text"
-        inputmode="search"
-        autocomplete="off"
-        autocorrect="off"
-        autocapitalize="off"
-        spellcheck="false"
-        placeholder="Buscar município..."
-        aria-label="Buscar município"
-        aria-expanded="false"
-        role="combobox"
-        aria-autocomplete="list"
-        aria-controls="suggestionsList"
-      >
-      <button id="clearBtn" class="clear-btn" type="button" aria-label="Limpar busca" hidden>&times;</button>
-    </div>
-    <ul id="suggestionsList" class="suggestions-list" role="listbox" hidden></ul>
+  <div class="tabs" id="tabsBar" role="tablist">
+    <button class="tab-btn active" data-tab="nome" type="button" role="tab" aria-selected="true">🔍 Por nome</button>
+    <button class="tab-btn" data-tab="raio" type="button" role="tab" aria-selected="false">📍 Cidades próximas</button>
+  </div>
+
+  <section id="panelNome" class="tab-panel">
+    <section class="search-section">
+      <div class="search-box" id="searchBox">
+        <span class="search-icon">&#128269;</span>
+        <input
+          id="searchInput"
+          type="text"
+          inputmode="search"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          placeholder="Buscar município..."
+          aria-label="Buscar município"
+          aria-expanded="false"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-controls="suggestionsList"
+        >
+        <button id="clearBtn" class="clear-btn" type="button" aria-label="Limpar busca" hidden>&times;</button>
+      </div>
+      <ul id="suggestionsList" class="suggestions-list" role="listbox" hidden></ul>
+    </section>
+
+    <section id="emptyState" class="empty-state">
+      <div class="empty-state-icon">&#127968;</div>
+      <p>Digite o nome de um município para consultar votação, emendas e indicações.</p>
+      <div class="empty-state-stats" id="globalStats"></div>
+    </section>
   </section>
 
-  <section id="emptyState" class="empty-state">
-    <div class="empty-state-icon">&#127968;</div>
-    <p>Digite o nome de um município para consultar votação, emendas e indicações.</p>
-    <div class="empty-state-stats" id="globalStats"></div>
+  <section id="panelRaio" class="tab-panel" hidden>
+    <section class="radius-controls">
+      <p class="radius-intro">Digite um raio (até 150 km) para listar os municípios mais próximos da sua localização atual.</p>
+      <div class="radius-input-row">
+        <input id="radiusInput" type="number" inputmode="numeric" min="1" max="150" placeholder="Ex: 50" aria-label="Raio em quilômetros">
+        <span class="radius-unit">km</span>
+        <button id="radiusSearchBtn" class="radius-search-btn" type="button">Buscar</button>
+      </div>
+      <div class="radius-chips">
+        <button class="chip" data-km="10" type="button">10 km</button>
+        <button class="chip" data-km="25" type="button">25 km</button>
+        <button class="chip" data-km="50" type="button">50 km</button>
+        <button class="chip" data-km="100" type="button">100 km</button>
+        <button class="chip" data-km="150" type="button">150 km</button>
+      </div>
+    </section>
+
+    <div id="radiusStatus" class="radius-status" hidden></div>
+    <ul id="radiusResultsList" class="radius-results-list"></ul>
   </section>
 
   <section id="cityCard" class="city-card" hidden>

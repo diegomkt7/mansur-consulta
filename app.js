@@ -3,9 +3,14 @@
 
   let CIDADES = [];
   let byNormName = new Map();
-  let watchId = null;
+  let cityWatchId = null;
   let selectedCity = null;
+  let activeTab = 'nome';
+  let radiusResultsCache = [];
 
+  const tabsBar = document.getElementById('tabsBar');
+  const panelNome = document.getElementById('panelNome');
+  const panelRaio = document.getElementById('panelRaio');
   const searchInput = document.getElementById('searchInput');
   const clearBtn = document.getElementById('clearBtn');
   const suggestionsList = document.getElementById('suggestionsList');
@@ -17,6 +22,10 @@
   const sheetBody = document.getElementById('sheetBody');
   const sheetClose = document.getElementById('sheetClose');
   const toastEl = document.getElementById('toast');
+  const radiusInput = document.getElementById('radiusInput');
+  const radiusSearchBtn = document.getElementById('radiusSearchBtn');
+  const radiusStatus = document.getElementById('radiusStatus');
+  const radiusResultsList = document.getElementById('radiusResultsList');
 
   let activeIndex = -1;
   let currentSuggestions = [];
@@ -42,6 +51,11 @@
   function formatCurrency(v) {
     if (v == null || v === '') return '—';
     return Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
+  }
+
+  function formatDistance(km) {
+    if (km < 1) return `${Math.round(km * 1000)} m`;
+    return `${km.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`;
   }
 
   function showToast(msg, ms = 2600) {
@@ -128,11 +142,30 @@
 
   function selectCity(city) {
     selectedCity = city;
-    searchInput.value = city.nome;
-    suggestionsList.hidden = true;
-    stopGps();
+    stopCityGps();
+    panelNome.hidden = true;
+    panelRaio.hidden = true;
     renderCityCard(city);
-    clearBtn.hidden = false;
+    cityCard.hidden = false;
+
+    if (activeTab === 'nome') {
+      searchInput.value = city.nome;
+      suggestionsList.hidden = true;
+      clearBtn.hidden = false;
+    }
+  }
+
+  function closeCityCard() {
+    cityCard.hidden = true;
+    selectedCity = null;
+    stopCityGps();
+    showPanel(activeTab);
+    if (activeTab === 'nome') {
+      searchInput.value = '';
+      clearBtn.hidden = true;
+      suggestionsList.hidden = true;
+      emptyState.hidden = false;
+    }
   }
 
   function renderCityCard(c) {
@@ -144,6 +177,7 @@
 
     cityCard.innerHTML = `
       <div class="city-header">
+        <button id="cityBackBtn" class="back-btn" type="button">&larr; Voltar</button>
         <h1 class="city-name">${escapeHtml(c.nome)}</h1>
         <div class="city-rank">${c.colocacao ? `#${formatInt(c.colocacao)} colocação estadual` : ''} · ${formatInt(c.populacao)} habitantes</div>
       </div>
@@ -204,6 +238,7 @@
     });
 
     document.getElementById('gpsBtn').addEventListener('click', toggleGps);
+    document.getElementById('cityBackBtn').addEventListener('click', closeCityCard);
   }
 
   function openDetailSheet(type) {
@@ -278,15 +313,26 @@
     return R * c;
   }
 
-  function toggleGps() {
-    if (watchId !== null) {
-      stopGps();
-      return;
+  function geoErrorMessage(err) {
+    if (err.code === err.PERMISSION_DENIED) {
+      return 'Permissão de localização negada. Habilite o GPS/localização para este site nas configurações do navegador.';
+    } else if (err.code === err.POSITION_UNAVAILABLE) {
+      return 'Localização indisponível no momento. Verifique se o GPS está ativado.';
+    } else if (err.code === err.TIMEOUT) {
+      return 'Tempo esgotado ao tentar obter sua localização. Tente novamente.';
     }
-    startGps();
+    return 'Não foi possível obter sua localização.';
   }
 
-  function startGps() {
+  function toggleGps() {
+    if (cityWatchId !== null) {
+      stopCityGps();
+      return;
+    }
+    startCityGps();
+  }
+
+  function startCityGps() {
     const c = selectedCity;
     if (!c || c.lat == null || c.lon == null) {
       renderGpsError('Coordenadas do município não disponíveis.');
@@ -303,17 +349,20 @@
       gpsBtn.textContent = '⏹ Parar cálculo de distância';
     }
 
-    watchId = navigator.geolocation.watchPosition(
+    cityWatchId = navigator.geolocation.watchPosition(
       pos => renderGpsResult(pos, c),
-      err => handleGpsError(err),
+      err => {
+        renderGpsError(geoErrorMessage(err));
+        stopCityGps();
+      },
       { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
     );
   }
 
-  function stopGps() {
-    if (watchId !== null) {
-      navigator.geolocation.clearWatch(watchId);
-      watchId = null;
+  function stopCityGps() {
+    if (cityWatchId !== null) {
+      navigator.geolocation.clearWatch(cityWatchId);
+      cityWatchId = null;
     }
     const gpsBtn = document.getElementById('gpsBtn');
     if (gpsBtn) {
@@ -328,34 +377,99 @@
     const resultEl = document.getElementById('gpsResult');
     if (!resultEl) return;
 
-    const distText = distKm < 1
-      ? { value: Math.round(distKm * 1000), unit: 'm' }
-      : { value: distKm.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }), unit: 'km' };
-
     resultEl.innerHTML = `
       <div class="gps-result">
-        <span class="gps-pulse"></span><span class="gps-distance">${distText.value}</span><span class="gps-distance-unit">${distText.unit}</span>
+        <span class="gps-pulse"></span><span class="gps-distance">${formatDistance(distKm)}</span>
         <div class="gps-sub">Distância em linha reta até ${escapeHtml(city.nome)} · precisão do GPS: ±${Math.round(accuracy)}m</div>
       </div>
     `;
   }
 
-  function handleGpsError(err) {
-    let msg = 'Não foi possível obter sua localização.';
-    if (err.code === err.PERMISSION_DENIED) {
-      msg = 'Permissão de localização negada. Habilite o GPS/localização para este site nas configurações do navegador.';
-    } else if (err.code === err.POSITION_UNAVAILABLE) {
-      msg = 'Localização indisponível no momento. Verifique se o GPS está ativado.';
-    } else if (err.code === err.TIMEOUT) {
-      msg = 'Tempo esgotado ao tentar obter sua localização. Tente novamente.';
-    }
-    renderGpsError(msg);
-    stopGps();
-  }
-
   function renderGpsError(msg) {
     const resultEl = document.getElementById('gpsResult');
     if (resultEl) resultEl.innerHTML = `<div class="gps-error">${escapeHtml(msg)}</div>`;
+  }
+
+  // --- Radius search ---
+
+  function showPanel(tab) {
+    activeTab = tab;
+    [...tabsBar.children].forEach(btn => {
+      const active = btn.dataset.tab === tab;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', String(active));
+    });
+    panelNome.hidden = tab !== 'nome';
+    panelRaio.hidden = tab !== 'raio';
+  }
+
+  function switchTab(tab) {
+    if (tab === activeTab && cityCard.hidden) return;
+    stopCityGps();
+    cityCard.hidden = true;
+    selectedCity = null;
+    showPanel(tab);
+  }
+
+  function clampRadiusKm(v) {
+    const n = Math.round(parseFloat(v));
+    if (!Number.isFinite(n)) return null;
+    return Math.min(150, Math.max(1, n));
+  }
+
+  function showRadiusStatus(msg, kind) {
+    radiusStatus.className = 'radius-status' + (kind ? ` radius-status-${kind}` : '');
+    radiusStatus.textContent = msg;
+    radiusStatus.hidden = !msg;
+  }
+
+  function runRadiusSearch(km) {
+    if (!('geolocation' in navigator)) {
+      showRadiusStatus('Este dispositivo/navegador não suporta geolocalização.', 'error');
+      return;
+    }
+    radiusResultsList.innerHTML = '';
+    showRadiusStatus('Obtendo sua localização...', 'loading');
+
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const { latitude, longitude } = pos.coords;
+        const results = CIDADES
+          .filter(c => c.lat != null && c.lon != null)
+          .map(c => ({ city: c, dist: haversineKm(latitude, longitude, c.lat, c.lon) }))
+          .filter(r => r.dist <= km)
+          .sort((a, b) => a.dist - b.dist);
+        radiusResultsCache = results;
+        renderRadiusResults(results, km);
+      },
+      err => showRadiusStatus(geoErrorMessage(err), 'error'),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+    );
+  }
+
+  function renderRadiusResults(results, km) {
+    if (results.length === 0) {
+      showRadiusStatus(`Nenhum município encontrado em um raio de ${km} km.`, 'empty');
+      radiusResultsList.innerHTML = '';
+      return;
+    }
+    showRadiusStatus(`${results.length} ${results.length === 1 ? 'município encontrado' : 'municípios encontrados'} em até ${km} km`, 'success');
+    radiusResultsList.innerHTML = results.map(({ city, dist }, i) => `
+      <li class="radius-item" data-index="${i}">
+        <div class="radius-item-top">
+          <span class="radius-item-name">${escapeHtml(city.nome)}</span>
+          <span class="radius-item-dist">${formatDistance(dist)}</span>
+        </div>
+        <div class="radius-item-stats">
+          <span>${formatInt(city.votos)} votos</span>
+          <span>${formatPct(city.pctVotos)}</span>
+        </div>
+        <div class="radius-item-badges">
+          <span class="badge-mini ${city.emendas.length ? 'badge-mini-yes' : 'badge-mini-no'}">Emenda: ${city.emendas.length ? 'Sim' : 'Não'}</span>
+          <span class="badge-mini ${city.indicacoes.length ? 'badge-mini-yes' : 'badge-mini-no'}">Indicação: ${city.indicacoes.length ? 'Sim' : 'Não'}</span>
+        </div>
+      </li>
+    `).join('');
   }
 
   // --- Event wiring ---
@@ -366,7 +480,7 @@
     renderSuggestions(v);
     if (!v.trim()) {
       selectedCity = null;
-      stopGps();
+      stopCityGps();
       cityCard.hidden = true;
       emptyState.hidden = false;
     }
@@ -410,7 +524,7 @@
     clearBtn.hidden = true;
     suggestionsList.hidden = true;
     selectedCity = null;
-    stopGps();
+    stopCityGps();
     cityCard.hidden = true;
     emptyState.hidden = false;
     searchInput.focus();
@@ -425,6 +539,40 @@
   sheetClose.addEventListener('click', closeDetailSheet);
   detailSheet.addEventListener('click', (e) => {
     if (e.target === detailSheet) closeDetailSheet();
+  });
+
+  tabsBar.addEventListener('click', (e) => {
+    const btn = e.target.closest('.tab-btn');
+    if (btn) switchTab(btn.dataset.tab);
+  });
+
+  radiusSearchBtn.addEventListener('click', () => {
+    const km = clampRadiusKm(radiusInput.value);
+    if (km == null) {
+      showRadiusStatus('Digite uma distância válida (1 a 150 km).', 'error');
+      return;
+    }
+    radiusInput.value = km;
+    runRadiusSearch(km);
+  });
+
+  radiusInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') radiusSearchBtn.click();
+  });
+
+  document.querySelector('.radius-chips').addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    radiusInput.value = chip.dataset.km;
+    runRadiusSearch(Number(chip.dataset.km));
+  });
+
+  radiusResultsList.addEventListener('click', (e) => {
+    const item = e.target.closest('.radius-item');
+    if (!item) return;
+    const idx = Number(item.dataset.index);
+    const entry = radiusResultsCache[idx];
+    if (entry) selectCity(entry.city);
   });
 
   // --- Init ---
