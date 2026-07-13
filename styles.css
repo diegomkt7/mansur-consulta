@@ -253,8 +253,11 @@ html, body {
   inset: 0;
   background: rgba(0,0,0,0.5);
   z-index: 100;
-  display: flex;
+  display: none;
   align-items: flex-end;
+}
+.sheet-overlay:not([hidden]) {
+  display: flex;
   animation: overlayIn 0.15s ease;
 }
 @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
