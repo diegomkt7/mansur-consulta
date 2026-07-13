@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1A237E">
+<meta name="description" content="Consulta de votação, emendas e indicações por município - Dep. Paulo Mansur">
+<title>Consulta Eleitoral - Paulo Mansur</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mansur Consulta">
+
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-header-title">Consulta Eleitoral</div>
+  <div class="app-header-sub">Dep. Paulo Mansur | PL-SP</div>
+</header>
+
+<main class="container">
+
+  <section class="search-section">
+    <div class="search-box" id="searchBox">
+      <span class="search-icon">&#128269;</span>
+      <input
+        id="searchInput"
+        type="text"
+        inputmode="search"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        placeholder="Buscar município..."
+        aria-label="Buscar município"
+        aria-expanded="false"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-controls="suggestionsList"
+      >
+      <button id="clearBtn" class="clear-btn" type="button" aria-label="Limpar busca" hidden>&times;</button>
+    </div>
+    <ul id="suggestionsList" class="suggestions-list" role="listbox" hidden></ul>
+  </section>
+
+  <section id="emptyState" class="empty-state">
+    <div class="empty-state-icon">&#127968;</div>
+    <p>Digite o nome de um município para consultar votação, emendas e indicações.</p>
+    <div class="empty-state-stats" id="globalStats"></div>
+  </section>
+
+  <section id="cityCard" class="city-card" hidden>
+    <!-- populated by JS -->
+  </section>
+
+</main>
+
+<div id="detailSheet" class="sheet-overlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <h2 id="sheetTitle"></h2>
+      <button id="sheetClose" class="sheet-close" type="button" aria-label="Fechar">&times;</button>
+    </div>
+    <div id="sheetBody" class="sheet-body"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
